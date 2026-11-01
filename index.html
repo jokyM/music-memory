@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Memory</title>
 <script>
-const VERSION = "2.6";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
+const VERSION = "2.7";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
 
 /* ============================================================
    SPIEL 1 – MUSIK: Songs als "Interpret Titel"
@@ -101,7 +101,7 @@ const PLAKETTEN = 24;
   .info b { color: var(--text); }
   #app:not(.setup) { display: flex; flex-direction: column; align-items: center; }
   .tiles { margin-top: 26px; text-align: center; }
-  .ver { position: fixed; right: 12px; bottom: calc(8px + env(safe-area-inset-bottom)); font-size: 11px; color: var(--muted); opacity: .7; }
+  .ver { position: fixed; right: 12px; bottom: calc(8px + env(safe-area-inset-bottom)); font-size: 11px; color: var(--muted); opacity: .7; text-decoration: none; padding: 8px 4px 4px 12px; }
   .choice.solo { width: 150px; height: 168px; cursor: default; }
   .choice.solo .lbl { font-size: 17px; } .choice.solo .ico { font-size: 40px; }
   .progress { margin-top: 26px; font-size: 18px; color: var(--muted); } .progress b { color: var(--text); font-size: 26px; }
@@ -658,7 +658,7 @@ function renderSetup() {
 }
 
 // ---------- Version anzeigen + automatisch neue Version holen ----------
-document.body.insertAdjacentHTML("beforeend", `<div class="ver">Version ${VERSION}</div>`);
+document.body.insertAdjacentHTML("beforeend", `<a class="ver" href="${location.pathname}?setup" title="Einstellungen">⚙︎ Version ${VERSION}</a>`);
 function checkUpdate() {
   fetch(location.pathname + "?nocache=" + Date.now(), { cache: "no-store" })
     .then(r => r.text())
