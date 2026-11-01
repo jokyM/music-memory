@@ -54,6 +54,10 @@ const SNIPPET_BILDER = 15;   // Sekunden fuer die Songs im Bilder-Spiel
 /* Welche Spiele im Menue erscheinen (Standard fuer neue Handys).
    Aendern geht auch bequem auf der Setup-Seite (?setup). */
 const AKTIV = ["musik", "rechnen", "bilder"];
+
+/* Wie viele Plaketten du besitzt (Standard, aenderbar im Setup).
+   Das ist die Obergrenze fuer die Kachel-Auswahl beim Spielbeginn. */
+const PLAKETTEN = 24;
 </script>
 <style>
   :root {
@@ -90,6 +94,17 @@ const AKTIV = ["musik", "rechnen", "bilder"];
   .choice:active { transform: scale(.96); }
   .info { margin-top: 30px; text-align: center; color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 340px; }
   .info b { color: var(--text); }
+  #app:not(.setup) { display: flex; flex-direction: column; align-items: center; }
+  .tiles { margin-top: 26px; text-align: center; }
+  .tiles .tl { font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: var(--bronze); margin-bottom: 8px; }
+  .stepper { display: inline-flex; align-items: center; gap: 18px; }
+  .stepper button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(120,144,173,.35); background: var(--panel); color: var(--text); font-size: 24px; cursor: pointer; }
+  .stepper button[disabled] { opacity: .3; cursor: default; }
+  .stepper .tv { font-size: 38px; font-weight: 800; min-width: 56px; font-variant-numeric: tabular-nums; }
+  .chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+  .chip { border: 1px solid rgba(120,144,173,.35); background: none; color: var(--muted); border-radius: 999px; padding: 7px 13px; font: inherit; font-size: 14px; cursor: pointer; }
+  .chip.on { background: var(--bronze); border-color: var(--bronze); color: var(--bg); font-weight: 700; }
+  .tmax { margin-top: 8px; font-size: 12px; color: var(--muted); }
   .newgame { margin-top: 22px; background: var(--bronze); color: var(--bg); border: 0; border-radius: 12px; padding: 14px 26px; font-weight: 700; font-size: 17px; cursor: pointer; }
   .toast { margin-top: 14px; color: var(--bronze-hi); font-size: 14px; min-height: 1.3em; }
 
@@ -186,6 +201,35 @@ function pairing(n, seed) {
   return s.map(x => [x >> 1, x & 1]);
 }
 
+// ---------- Kachel-Anzahl ----------
+const plaques = () => Math.max(4, parseInt(load("plaques", String(PLAKETTEN)), 10) || PLAKETTEN);
+const maxTiles = (mode = MODE) => { const m = Math.min(plaques(), 2 * GAMES[mode].count()); return m - (m % 2); };
+function tiles(mode = MODE) {
+  const max = maxTiles(mode), v = parseInt(load("tiles_" + mode, String(Math.min(12, max))), 10) || max;
+  return Math.max(Math.min(4, max), Math.min(max, v - (v % 2)));
+}
+// Vorschlaege: Leicht / Mittel / Schwer innerhalb des Maximums
+function presets(mode = MODE) {
+  const max = maxTiles(mode), ev = x => Math.max(4, Math.round(x / 2) * 2);
+  const out = [["Leicht", ev(max / 3)], ["Mittel", ev(max * 2 / 3)], ["Schwer", max]].filter(([, v]) => v <= max);
+  return out.filter(([, v], i) => out.findIndex(([, w]) => w === v) === i);
+}
+// Auslege-Vorschlag: moeglichst quadratisches Raster
+function grid(n) {
+  let best = [1, n];
+  for (let r = 1; r * r <= n; r++) if (n % r === 0) best = [r, n / r];
+  if (best[0] === 1 && n > 5) return null;
+  return best;
+}
+// Plakette t (1..Kacheln) -> [Index im Pool, Seite]; waehlt pro Runde zufaellig, welche Paare mitspielen
+function gameMap() {
+  const k = tiles() / 2, N = GAMES[MODE].count(), r = mulberry32(SEED ^ 0x5bd1e995);
+  const pool = [...Array(N).keys()];
+  for (let i = N - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  const chosen = pool.slice(0, k);
+  return pairing(k, SEED).map(([p, side]) => [chosen[p], side]);
+}
+
 function itunes(term) {
   return new Promise((resolve, reject) => {
     const cb = "cb_" + Math.random().toString(36).slice(2), s = document.createElement("script");
@@ -208,7 +252,7 @@ const menuLink = `<a class="menu" href="${location.pathname}">‹ Menü</a>`;
 
 // ---------- Menue ----------
 function renderMenu(msg = "") {
-  const g = GAMES[MODE], n = g.count();
+  const g = GAMES[MODE], T = tiles(), n = T / 2, max = maxTiles(), gr = grid(T);
   const stt = getState(), done = stt ? stt.found.length : 0;
   app.className = "";
   app.innerHTML = `
@@ -219,7 +263,21 @@ function renderMenu(msg = "") {
           ${HEX_PAT}<span class="lbl"><span class="ico">${v.icon}</span>${v.name.split("-")[0]}</span>
         </button>`).join("")}
     </div>
-    <div class="info">Aktuell: <b>${g.name}</b><br>${n} Paare · Plaketten <b>1 bis ${2 * n}</b> auslegen${done ? `<br>Gefunden: <b>${done} von ${n}</b>` : ""}</div>
+    <div class="tiles">
+      <div class="tl">Anzahl Kacheln</div>
+      <div class="stepper">
+        <button id="minus" ${T <= 4 ? "disabled" : ""} aria-label="weniger">−</button>
+        <span class="tv">${T}</span>
+        <button id="plus" ${T >= max ? "disabled" : ""} aria-label="mehr">+</button>
+      </div>
+      <div class="chips">${presets().map(([l, v]) => `<button class="chip ${v === T ? "on" : ""}" data-tiles="${v}">${l} · ${v}</button>`).join("")}</div>
+      <div class="tmax">max. ${max} (${max === 2 * g.count() ? `${g.count()} Paare in den Einstellungen` : `${plaques()} Plaketten vorhanden`})</div>
+    </div>
+    <div class="info">
+      <b>${g.name}</b> · ${n} Paare<br>
+      Lege die Plaketten <b>1 bis ${T}</b> verdeckt aus${gr ? `,<br>Vorschlag: <b>${gr[0]} Reihen × ${gr[1]}</b>` : ""}
+      ${done ? `<br>Gefunden: <b>${done} von ${n}</b>` : ""}
+    </div>
     <button class="newgame" id="new">Neues Spiel – neu mischen</button>
     <div class="toast">${msg}</div>`;
   app.querySelectorAll(".choice").forEach(b => b.onclick = () => {
@@ -227,6 +285,10 @@ function renderMenu(msg = "") {
     renderMenu(`${GAMES[MODE].name} gewählt – Paare neu gemischt`);
   });
   document.getElementById("new").onclick = () => { newSeed(); renderMenu("Paare neu gemischt – viel Spaß!"); };
+  const setTiles = v => { save("tiles_" + MODE, String(v)); newSeed(); renderMenu(`${v} Kacheln – neue Runde gemischt`); };
+  document.getElementById("minus").onclick = () => setTiles(T - 2);
+  document.getElementById("plus").onclick = () => setTiles(T + 2);
+  app.querySelectorAll(".chip").forEach(c => c.onclick = () => setTiles(+c.dataset.tiles));
 }
 function newSeed() { SEED = Math.floor(Math.random() * 1e9); save("seed", String(SEED)); }
 
@@ -320,7 +382,7 @@ const resultBox = `<div class="result" id="result"></div>`;
 
 // ---------- Plakette ----------
 function renderTag(tag) {
-  const n = GAMES[MODE].count(), map = pairing(n, SEED);
+  const map = gameMap();
   history.replaceState(null, "", location.pathname);
   if (!tag || tag < 1) {
     app.innerHTML = `${menuLink}<h1>${GAMES[MODE].name}</h1><div id="status"><span class="bad">Unbekannte Plakette – nochmal antippen</span></div>`;
@@ -427,7 +489,7 @@ function renderSong(term, secs = SNIPPET, title = "Musik-Memory") {
 
 // ---------- Setup / Spielleiter-Ansicht ----------
 function renderSetup() {
-  const g = GAMES[MODE], n = g.count(), map = pairing(n, SEED);
+  const g = GAMES[MODE], map = gameMap(), n = map.length / 2;
   const tagsOf = i => [0, 1].map(s => map.findIndex(([p, ss]) => p === i && ss === s) + 1);
   app.className = "setup";
   const dupes = MODE === "rechnen" ? PAIRS.map(p => p[1].trim()).filter((r, i, a) => a.indexOf(r) !== i) : [];
@@ -440,8 +502,13 @@ function renderSetup() {
           <span class="sw"><input type="checkbox" data-game="${k}" ${ENABLED.includes(k) ? "checked" : ""}><span></span></span>
         </label>`).join("")}
     </div>
+    <h3>Plaketten</h3>
+    <div class="games"><label><span class="gi">⬡</span>
+      <span class="gn">Vorhandene Plaketten<br><span class="gc">Obergrenze für „Anzahl Kacheln“</span></span>
+      <input id="plq" type="number" min="4" step="2" value="${plaques()}" style="width:76px;font:inherit;font-size:17px;padding:6px 8px;border-radius:8px;border:1px solid rgba(120,144,173,.35);background:var(--bg);color:var(--text);text-align:center">
+    </label></div>
     <h3>Zuordnung</h3>
-    <h2>${g.name} · ${n} Paare = ${2 * n} Plaketten</h2>
+    <h2>${g.name} · diese Runde ${n} von ${g.count()} Paaren = ${2 * n} Kacheln</h2>
     <p>Tags beschriften mit <code>${BASE}?t=1</code> bis <code>?t=${Math.max(SONGS.length, PAIRS.length, BILDER.length) * 2}</code>.
        Unten die Zuordnung der <b>aktuellen</b> Runde auf diesem Handy – nach „Neues Spiel“ ändert sie sich.
        Nicht den Mitspielern zeigen! · <a href="${location.pathname}" style="color:var(--bronze-hi)">Menü</a></p>
@@ -454,9 +521,14 @@ function renderSetup() {
     if (!ENABLED.includes(MODE)) { MODE = ENABLED[0]; save("mode", MODE); newSeed(); }
     renderSetup();
   });
+  document.getElementById("plq").onchange = e => {
+    const v = Math.max(4, parseInt(e.target.value, 10) || PLAKETTEN);
+    save("plaques", String(v - (v % 2))); newSeed(); renderSetup();
+  };
   const list = document.getElementById("list"), audio = new Audio();
   const items = MODE === "musik" ? SONGS : MODE === "rechnen" ? PAIRS : BILDER;
   items.forEach((it, i) => {
+    if (!map.some(([pp]) => pp === i)) return;                  // spielt diese Runde nicht mit
     const [a, b] = tagsOf(i), row = document.createElement("div"); row.className = "row";
     if (MODE === "bilder" && typeof it === "object" && !Array.isArray(it)) {
       row.innerHTML = `<img src="${it.bild}" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:8px;background:#000">
