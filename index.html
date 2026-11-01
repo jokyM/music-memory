@@ -36,17 +36,20 @@ const PAIRS = [
 
 /* ============================================================
    SPIEL 3 – BILDER: JPEGs in den Ordner "bilder" hochladen
-   "bilder/x.jpg"            -> zwei gleiche Bilder bilden ein Paar
-   ["bilder/x.jpg", "Name"]  -> Bild + Name bilden ein Paar
+   "bilder/x.jpg"                           -> zwei gleiche Bilder
+   ["bilder/x.jpg", "Name"]                 -> Bild + Name
+   { bild: "bilder/x.jpg", song: "Titel" }  -> Bild + Song aus Apple Music
+   Song wie bei Musik: "Titel Interpret" oder "Titel Film" (im Setup pruefen!)
    ============================================================ */
 const BILDER = [
-  ["bilder/figur1.jpg", "Figur 1"],
-  ["bilder/figur2.jpg", "Figur 2"],
-  "bilder/figur3.jpg",
-  "bilder/figur4.jpg",
-  "bilder/figur5.jpg",
-  "bilder/figur6.jpg",
+  { bild: "bilder/elsa.jpg",       song: "Let It Go Idina Menzel" },
+  { bild: "bilder/arielle.jpg",    song: "Part of Your World Jodi Benson" },
+  { bild: "bilder/simba.jpg",      song: "Hakuna Matata Lion King" },
+  { bild: "bilder/aladdin.jpg",    song: "A Whole New World Aladdin" },
+  { bild: "bilder/rapunzel.jpg",   song: "I See the Light Tangled" },
+  { bild: "bilder/vaiana.jpg",     song: "How Far I'll Go Moana" },
 ];
+const SNIPPET_BILDER = 15;   // Sekunden fuer die Songs im Bilder-Spiel
 
 /* Welche Spiele im Menue erscheinen (Standard fuer neue Handys).
    Aendern geht auch bequem auf der Setup-Seite (?setup). */
@@ -243,10 +246,12 @@ function renderTag(tag) {
 // Bild-Paar: String -> gleiches Bild zweimal; [Bild, Name] -> Seite 0 Bild, Seite 1 Name
 function pictureSide(entry, side) {
   if (typeof entry === "string") return { img: entry };
+  if (!Array.isArray(entry)) return side === 0 ? { img: entry.bild } : { song: entry.song };
   return side === 0 ? { img: entry[0] } : { text: entry[1] };
 }
 function renderPicture(entry, side) {
   const v = pictureSide(entry, side);
+  if (v.song) return renderSong(v.song, SNIPPET_BILDER, "Bilder-Memory");
   const back = v.img
     ? `<svg viewBox="0 0 280 280"><defs><clipPath id="hc"><path d="${HEXP}"/></clipPath></defs>
          <path d="${HEXP}" fill="url(#g)"/>
@@ -278,9 +283,9 @@ function renderMath(text) {
 }
 
 const HEX = "M120 12 L213 66 L213 174 L120 228 L27 174 L27 66 Z", PERIM = 6 * 108;
-function renderSong(term) {
+function renderSong(term, secs = SNIPPET, title = "Musik-Memory") {
   app.innerHTML = `${menuLink}
-    <h1>Musik-Memory</h1>
+    <h1>${title}</h1>
     <button class="hexbtn" id="play" disabled aria-label="Abspielen">
       <svg viewBox="0 0 240 240">
         <path class="track" d="${HEX}" transform="translate(120 120) scale(1.08) translate(-120 -120)"/>
@@ -306,7 +311,7 @@ function renderSong(term) {
     audio.play().then(() => {
       icon.setAttribute("d", STOP); started = Date.now();
       st.innerHTML = `Hör genau hin <span class="eqz"><i></i><i></i><i></i></span>`;
-      timer = setInterval(() => { const f = Math.min((Date.now() - started) / 1000 / SNIPPET, 1); prog.style.strokeDashoffset = PERIM * (1 - f); if (f >= 1) stop(); }, 200);
+      timer = setInterval(() => { const f = Math.min((Date.now() - started) / 1000 / secs, 1); prog.style.strokeDashoffset = PERIM * (1 - f); if (f >= 1) stop(); }, 200);
     }).catch(() => { st.innerHTML = `<span class="bad">Wiedergabe blockiert – nochmal tippen</span>`; });
   };
   audio.addEventListener("ended", stop);
@@ -345,7 +350,19 @@ function renderSetup() {
   const items = MODE === "musik" ? SONGS : MODE === "rechnen" ? PAIRS : BILDER;
   items.forEach((it, i) => {
     const [a, b] = tagsOf(i), row = document.createElement("div"); row.className = "row";
-    if (MODE === "bilder") {
+    if (MODE === "bilder" && typeof it === "object" && !Array.isArray(it)) {
+      row.innerHTML = `<img src="${it.bild}" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:8px;background:#000">
+        <div class="txt"><div class="main">${it.bild.split("/").pop()} + ♪</div>
+        <div class="meta">Plakette ${a} zeigt das Bild · Plakette ${b} spielt den Song · <span>suche …</span></div></div>`;
+      row.querySelector("img").onerror = e => { e.target.replaceWith(Object.assign(document.createElement("div"), { className: "n bad", textContent: "✕" })); row.querySelector(".meta").insertAdjacentHTML("beforeend", ` · <span class="bad">Bild fehlt</span>`); };
+      const meta = row.querySelector(".meta span");
+      itunes(it.song).then(r => {
+        meta.textContent = `gefunden: ${r.artistName} – ${r.trackName}`;
+        const btn = document.createElement("button"); btn.textContent = "▶";
+        btn.onclick = () => { if (audio.src === r.previewUrl && !audio.paused) return audio.pause(); audio.src = r.previewUrl; audio.play(); };
+        row.appendChild(btn);
+      }).catch(e => { meta.className = "bad"; meta.textContent = e === "notfound" ? "Song nicht gefunden – Schreibweise ändern" : "keine Verbindung zu Apple"; });
+    } else if (MODE === "bilder") {
       const img = typeof it === "string" ? it : it[0];
       const desc = typeof it === "string" ? `Plaketten ${a} + ${b} zeigen beide das Bild` : `Plakette ${a} zeigt das Bild · Plakette ${b} zeigt „${it[1]}“`;
       row.innerHTML = `<img src="${img}" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:8px;background:#000">
