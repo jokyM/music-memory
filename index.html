@@ -96,6 +96,12 @@ const PLAKETTEN = 24;
   .info b { color: var(--text); }
   #app:not(.setup) { display: flex; flex-direction: column; align-items: center; }
   .tiles { margin-top: 26px; text-align: center; }
+  .choice.solo { width: 150px; height: 168px; cursor: default; }
+  .choice.solo .lbl { font-size: 17px; } .choice.solo .ico { font-size: 40px; }
+  .progress { margin-top: 26px; font-size: 18px; color: var(--muted); } .progress b { color: var(--text); font-size: 26px; }
+  .bar { width: 220px; height: 6px; border-radius: 3px; background: var(--panel); margin-top: 10px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--bronze-hi); transition: width .4s; }
+  .newgame.ghost { background: none; border: 1px solid rgba(120,144,173,.35); color: var(--muted); font-weight: 600; }
   .tiles .tl { font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: var(--bronze); margin-bottom: 8px; }
   .stepper { display: inline-flex; align-items: center; gap: 18px; }
   .stepper button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(120,144,173,.35); background: var(--panel); color: var(--text); font-size: 24px; cursor: pointer; }
@@ -254,7 +260,27 @@ const menuLink = `<a class="menu" href="${location.pathname}">‹ Menü</a>`;
 function renderMenu(msg = "") {
   const g = GAMES[MODE], T = tiles(), n = T / 2, max = maxTiles(), gr = grid(T);
   const stt = getState(), done = stt ? stt.found.length : 0;
+  const running = load("running", "") === String(SEED);
   app.className = "";
+  const layout = `Lege die Plaketten <b>1 bis ${T}</b> verdeckt aus${gr ? `,<br>Vorschlag: <b>${gr[0]} Reihen × ${gr[1]}</b>` : ""}`;
+
+  if (running) {                       // ---- laufendes Spiel: nur dieses Spiel, keine Einstellungen
+    const finished = done === n;
+    app.innerHTML = `
+      <h1>${g.name}</h1>
+      <div class="choices"><div class="choice solo">${HEX_PAT}<span class="lbl"><span class="ico">${g.icon}</span>${T} Kacheln</span></div></div>
+      <div class="progress"><b>${done}</b> von ${n} Paaren gefunden</div>
+      <div class="bar"><i style="width:${n ? done / n * 100 : 0}%"></i></div>
+      <div class="info">${finished ? "Alle Paare gefunden! 🎉" : `${layout}<br>Halte das Handy an eine Plakette.`}</div>
+      <button class="newgame ${finished ? "" : "ghost"}" id="end">${finished ? "Neues Spiel" : "Spiel beenden"}</button>
+      <div class="toast">${msg}</div>`;
+    document.getElementById("end").onclick = () => {
+      if (!finished && done > 0 && !confirmEnd()) return;
+      save("running", ""); renderMenu();
+    };
+    return;
+  }
+
   app.innerHTML = `
     <h1>Memory</h1>
     <div class="choices">
@@ -273,22 +299,23 @@ function renderMenu(msg = "") {
       <div class="chips">${presets().map(([l, v]) => `<button class="chip ${v === T ? "on" : ""}" data-tiles="${v}">${l} · ${v}</button>`).join("")}</div>
       <div class="tmax">max. ${max} (${max === 2 * g.count() ? `${g.count()} Paare in den Einstellungen` : `${plaques()} Plaketten vorhanden`})</div>
     </div>
-    <div class="info">
-      <b>${g.name}</b> · ${n} Paare<br>
-      Lege die Plaketten <b>1 bis ${T}</b> verdeckt aus${gr ? `,<br>Vorschlag: <b>${gr[0]} Reihen × ${gr[1]}</b>` : ""}
-      ${done ? `<br>Gefunden: <b>${done} von ${n}</b>` : ""}
-    </div>
-    <button class="newgame" id="new">Neues Spiel – neu mischen</button>
+    <div class="info"><b>${g.name}</b> · ${n} Paare<br>${layout}</div>
+    <button class="newgame" id="new">Spiel starten</button>
     <div class="toast">${msg}</div>`;
-  app.querySelectorAll(".choice").forEach(b => b.onclick = () => {
-    MODE = b.dataset.mode; save("mode", MODE); newSeed();
-    renderMenu(`${GAMES[MODE].name} gewählt – Paare neu gemischt`);
-  });
-  document.getElementById("new").onclick = () => { newSeed(); renderMenu("Paare neu gemischt – viel Spaß!"); };
-  const setTiles = v => { save("tiles_" + MODE, String(v)); newSeed(); renderMenu(`${v} Kacheln – neue Runde gemischt`); };
+  app.querySelectorAll(".choice").forEach(b => b.onclick = () => { MODE = b.dataset.mode; save("mode", MODE); renderMenu(); });
+  document.getElementById("new").onclick = () => { newSeed(); save("running", String(SEED)); renderMenu("Paare gemischt – viel Spaß!"); };
+  const setTiles = v => { save("tiles_" + MODE, String(v)); renderMenu(); };
   document.getElementById("minus").onclick = () => setTiles(T - 2);
   document.getElementById("plus").onclick = () => setTiles(T + 2);
   app.querySelectorAll(".chip").forEach(c => c.onclick = () => setTiles(+c.dataset.tiles));
+}
+// Sicherheitsabfrage ohne Browser-Dialog: zweimal tippen
+let endArmed = 0;
+function confirmEnd() {
+  if (Date.now() - endArmed < 3000) return true;
+  endArmed = Date.now();
+  const t = document.querySelector(".toast"); if (t) t.textContent = "Nochmal tippen, um das Spiel wirklich zu beenden";
+  return false;
 }
 function newSeed() { SEED = Math.floor(Math.random() * 1e9); save("seed", String(SEED)); }
 
