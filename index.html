@@ -54,14 +54,14 @@ const AKTIV = ["musik", "rechnen", "bilder"];
 </script>
 <style>
   :root {
-    --bg: #14110f; --panel: #1f1a16; --bronze: #b08a62; --bronze-hi: #d9b48a;
-    --text: #efe6dc; --muted: #9c8f82; --err: #d98a7a;
+    --bg: #0e131b; --panel: #161e29; --bronze: #7890ad; --bronze-hi: #aec1d6;
+    --text: #e6edf4; --muted: #8d99a8; --err: #e3907f;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; min-height: 100%; }
   body {
     background-color: var(--bg);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 32L0 82V50l28 16 28-16v32L28 98z' fill='none' stroke='%23b08a62' stroke-opacity='0.09' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 32L0 82V50l28 16 28-16v32L28 98z' fill='none' stroke='%237890ad' stroke-opacity='0.09' stroke-width='1.5'/%3E%3C/svg%3E");
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -91,7 +91,7 @@ const AKTIV = ["musik", "rechnen", "bilder"];
   .hexbtn svg { width: 100%; height: 100%; overflow: visible; }
   .hexbtn .shape { fill: url(#g); transition: transform .15s; transform-origin: center; }
   .hexbtn:active .shape { transform: scale(.96); }
-  .hexbtn .track { fill: none; stroke: rgba(176,138,98,.2); stroke-width: 6; }
+  .hexbtn .track { fill: none; stroke: rgba(120,144,173,.2); stroke-width: 6; }
   .hexbtn .prog  { fill: none; stroke: var(--bronze-hi); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset .25s linear; }
   .hexbtn .icon  { fill: var(--bg); }
   .hexbtn[disabled] { opacity: .45; cursor: default; }
@@ -115,20 +115,20 @@ const AKTIV = ["musik", "rechnen", "bilder"];
   .setup { width: 100%; max-width: 640px; }
   .setup h2 { color: var(--bronze); font-size: 20px; margin: 0 0 6px; }
   .setup p { color: var(--muted); margin: 0 0 20px; line-height: 1.5; font-size: 14px; }
-  .row { background: var(--panel); border: 1px solid rgba(176,138,98,.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: center; }
+  .row { background: var(--panel); border: 1px solid rgba(120,144,173,.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: center; }
   .row .n { font-weight: 700; color: var(--bronze); min-width: 28px; }
   .row .txt { flex: 1; min-width: 0; }
   .row .main { font-size: 16px; font-weight: 600; }
   .row .meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
-  .games { background: var(--panel); border: 1px solid rgba(176,138,98,.2); border-radius: 14px; padding: 6px 14px; margin-bottom: 26px; }
+  .games { background: var(--panel); border: 1px solid rgba(120,144,173,.2); border-radius: 14px; padding: 6px 14px; margin-bottom: 26px; }
   .games label { display: flex; align-items: center; gap: 14px; padding: 12px 0; cursor: pointer; font-size: 16px; }
-  .games label + label { border-top: 1px solid rgba(176,138,98,.12); }
+  .games label + label { border-top: 1px solid rgba(120,144,173,.12); }
   .games .gi { width: 30px; text-align: center; color: var(--bronze-hi); font-size: 20px; font-weight: 800; }
   .games .gn { flex: 1; }
   .games .gc { color: var(--muted); font-size: 13px; }
   .sw { position: relative; width: 50px; height: 30px; flex: none; }
   .sw input { opacity: 0; width: 0; height: 0; position: absolute; }
-  .sw span { position: absolute; inset: 0; border-radius: 15px; background: #3a322b; transition: background .2s; }
+  .sw span { position: absolute; inset: 0; border-radius: 15px; background: #2b3646; transition: background .2s; }
   .sw span::after { content: ""; position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%; background: var(--text); transition: transform .2s; }
   .sw input:checked + span { background: var(--bronze); }
   .sw input:checked + span::after { transform: translateX(20px); }
@@ -141,10 +141,10 @@ const AKTIV = ["musik", "rechnen", "bilder"];
 <svg width="0" height="0" style="position:absolute">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#d9b48a"/><stop offset=".55" stop-color="#a77f57"/><stop offset="1" stop-color="#6e5238"/>
+      <stop offset="0" stop-color="#a3b6cb"/><stop offset=".55" stop-color="#5f7692"/><stop offset="1" stop-color="#34465e"/>
     </linearGradient>
     <pattern id="hx" width="28" height="49" patternUnits="userSpaceOnUse" patternTransform="scale(.7)">
-      <path d="M14 33L0 25V8L14 0l14 8v17L14 33zm0 16L0 41V25l14 8 14-8v16L14 49z" fill="none" stroke="#14110f" stroke-opacity=".25" stroke-width="1.5"/>
+      <path d="M14 33L0 25V8L14 0l14 8v17L14 33zm0 16L0 41V25l14 8 14-8v16L14 49z" fill="none" stroke="#0e131b" stroke-opacity=".28" stroke-width="1.5"/>
     </pattern>
   </defs>
 </svg>
@@ -251,7 +251,7 @@ function renderPicture(entry, side) {
     ? `<svg viewBox="0 0 280 280"><defs><clipPath id="hc"><path d="${HEXP}"/></clipPath></defs>
          <path d="${HEXP}" fill="url(#g)"/>
          <image href="${v.img}" x="27" y="10" width="226" height="260" preserveAspectRatio="xMidYMid slice" clip-path="url(#hc)"/>
-         <path d="${HEXP}" fill="none" stroke="#d9b48a" stroke-width="6"/></svg>`
+         <path d="${HEXP}" fill="none" stroke="#aec1d6" stroke-width="6"/></svg>`
     : `${HEX_PLAIN}<span class="q ${v.text.length > 7 ? "long" : ""}">${v.text}</span>`;
   app.innerHTML = `${menuLink}
     <h1>Bilder-Memory</h1>
