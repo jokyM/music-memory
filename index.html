@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Memory</title>
 <script>
-const VERSION = "2.0";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
+const VERSION = "2.2";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
 
 /* ============================================================
    SPIEL 1 – MUSIK: Songs als "Interpret Titel"
@@ -94,6 +94,7 @@ const PLAKETTEN = 24;
   .choice .lbl { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 4px; font-weight: 800; font-size: 15px; }
   .choice .ico { font-size: 28px; line-height: 1; }
   .choice.off { opacity: .4; }
+  .choice .lbl .sm { font-size: 11.5px; letter-spacing: -.01em; }
   .choice:active { transform: scale(.96); }
   .info { margin-top: 30px; text-align: center; color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 340px; }
   .info b { color: var(--text); }
@@ -192,8 +193,8 @@ let SEED = parseInt(load("seed", "4711"), 10);
 
 const GAMES = {
   musik:   { name: "Musik-Memory",  icon: "♪",   count: () => SONGS.length },
-  rechnen: { name: "Rechen-Memory", icon: "×÷", count: () => PAIRS.length },
-  bilder:  { name: "Bilder-Memory", icon: "★",  count: () => BILDER.length },
+  rechnen: { name: "Rechnen-Memory", icon: "×÷", count: () => PAIRS.length },
+  bilder:  { name: "Prinzessinnen-Memory", icon: "♛",  count: () => BILDER.length },
 };
 
 // Aktivierte Spiele (pro Handy gespeichert, sonst AKTIV aus der Konfiguration)
@@ -275,7 +276,7 @@ function renderMenu(msg = "") {
       <div class="choices"><div class="choice solo">${HEX_PAT}<span class="lbl"><span class="ico">${g.icon}</span>${T} Kacheln</span></div></div>
       <div class="progress"><b>${done}</b> von ${n} Paaren gefunden</div>
       <div class="bar"><i style="width:${n ? done / n * 100 : 0}%"></i></div>
-      <div class="info">${finished ? "Alle Paare gefunden! 🎉" : `${layout}<br>Halte das Handy an eine Plakette.`}</div>
+      <div class="info">${finished ? "Alle Paare gefunden! 🎉" : `${layout}<br>Halte die Plakette oben ans Handy.`}</div>
       <button class="newgame ${finished ? "" : "ghost"}" id="end">${finished ? "Neues Spiel" : "Spiel beenden"}</button>
       <div class="toast">${msg}</div>`;
     document.getElementById("end").onclick = () => {
@@ -290,7 +291,7 @@ function renderMenu(msg = "") {
     <div class="choices">
       ${Object.entries(GAMES).filter(([k]) => ENABLED.includes(k)).map(([k, v]) => `
         <button class="choice ${k === MODE ? "" : "off"}" data-mode="${k}">
-          ${HEX_PAT}<span class="lbl"><span class="ico">${v.icon}</span>${v.name.split("-")[0]}</span>
+          ${HEX_PAT}<span class="lbl"><span class="ico">${v.icon}</span><span class="${v.name.split("-")[0].length > 8 ? "sm" : ""}">${v.name.split("-")[0]}</span></span>
         </button>`).join("")}
     </div>
     <div class="tiles">
@@ -438,7 +439,7 @@ function pictureSide(entry, side) {
 }
 function renderPicture(entry, side) {
   const v = pictureSide(entry, side);
-  if (v.song) return renderSong(v.song, SNIPPET_BILDER, "Bilder-Memory");
+  if (v.song) return renderSong(v.song, SNIPPET_BILDER, "Prinzessinnen-Memory");
   const back = v.img
     ? `<svg viewBox="0 0 280 280"><defs><clipPath id="hc"><path d="${HEXP}"/></clipPath></defs>
          <path d="${HEXP}" fill="url(#g)"/>
@@ -446,7 +447,7 @@ function renderPicture(entry, side) {
          <path d="${HEXP}" fill="none" stroke="#aec1d6" stroke-width="6"/></svg>`
     : `${HEX_PLAIN}<span class="q ${v.text.length > 7 ? "long" : ""}">${v.text}</span>`;
   app.innerHTML = `${menuLink}
-    <h1>Bilder-Memory</h1>${turnLine()}
+    <h1>Prinzessinnen-Memory</h1>${turnLine()}
     <div class="card" id="card"><div class="flip">
       <div class="face front">${HEX_PAT}<span class="hint">AUFDECKEN</span></div>
       <div class="face back">${back}</div>
@@ -459,7 +460,7 @@ function renderPicture(entry, side) {
 
 function renderMath(text) {
   app.innerHTML = `${menuLink}
-    <h1>Rechen-Memory</h1>${turnLine()}
+    <h1>Rechnen-Memory</h1>${turnLine()}
     <div class="card" id="card"><div class="flip">
       <div class="face front">${HEX_PAT}<span class="hint">AUFDECKEN</span></div>
       <div class="face back">${HEX_PLAIN}<span class="q ${text.length > 7 ? "long" : ""}">${text}</span></div>
