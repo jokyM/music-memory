@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Memory</title>
 <script>
-const VERSION = "2.4";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
+const VERSION = "2.5";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
 
 /* ============================================================
    SPIEL 1 – MUSIK: Songs als "Interpret Titel"
@@ -242,10 +242,8 @@ function pairing(n, seed) {
 // ---------- Kachel-Anzahl ----------
 const plaques = () => { const v = SETTINGS.plaketten; return v - (v % 2); };
 const maxTiles = (mode = MODE) => { const m = Math.min(plaques(), 2 * GAMES[mode].count()); return m - (m % 2); };
-function tiles(mode = MODE) {
-  const max = maxTiles(mode), v = parseInt(load("tiles_" + mode, String(Math.min(12, max))), 10) || max;
-  return Math.max(Math.min(4, max), Math.min(max, v - (v % 2)));
-}
+// Kacheln = 2 x Anzahl der eingetragenen Elemente (hoechstens so viele, wie Plaketten vorhanden sind)
+function tiles(mode = MODE) { return maxTiles(mode); }
 // Vorschlaege: Leicht / Mittel / Schwer innerhalb des Maximums
 function presets(mode = MODE) {
   const max = maxTiles(mode), ev = x => Math.max(4, Math.round(x / 2) * 2);
@@ -321,25 +319,12 @@ function renderMenu(msg = "") {
           ${HEX_PAT}<span class="lbl"><span class="ico">${v.icon}</span><span class="${v.name.split("-")[0].length > 8 ? "sm" : ""}">${v.name.split("-")[0]}</span></span>
         </button>`).join("")}
     </div>
-    <div class="tiles">
-      <div class="tl">Anzahl Kacheln</div>
-      <div class="stepper">
-        <button id="minus" ${T <= 4 ? "disabled" : ""} aria-label="weniger">−</button>
-        <span class="tv">${T}</span>
-        <button id="plus" ${T >= max ? "disabled" : ""} aria-label="mehr">+</button>
-      </div>
-      <div class="chips">${presets().map(([l, v]) => `<button class="chip ${v === T ? "on" : ""}" data-tiles="${v}">${l} · ${v}</button>`).join("")}</div>
-      <div class="tmax">max. ${max} (${max === 2 * g.count() ? `${g.count()} Paare in den Einstellungen` : `${plaques()} Plaketten vorhanden`})</div>
-    </div>
+    <div class="tmax" style="margin-top:22px">${T} Kacheln · ${T === 2 * g.count() ? `alle ${g.count()} Paare` : `${n} von ${g.count()} Paaren (nur ${plaques()} Plaketten vorhanden)`}</div>
     <div class="info"><b>${g.name}</b> · ${n} Paare<br>${layout}</div>
     <button class="newgame" id="new">Spiel starten</button>
     <div class="toast">${msg}</div>`;
   app.querySelectorAll(".choice").forEach(b => b.onclick = () => { MODE = b.dataset.mode; save("mode", MODE); renderMenu(); });
   document.getElementById("new").onclick = () => { newSeed(); save("running", String(SEED)); renderMenu("Paare gemischt – viel Spaß!"); };
-  const setTiles = v => { save("tiles_" + MODE, String(v)); renderMenu(); };
-  document.getElementById("minus").onclick = () => setTiles(T - 2);
-  document.getElementById("plus").onclick = () => setTiles(T + 2);
-  app.querySelectorAll(".chip").forEach(c => c.onclick = () => setTiles(+c.dataset.tiles));
 }
 // Sicherheitsabfrage ohne Browser-Dialog: zweimal tippen
 let endArmed = 0;
@@ -589,7 +574,7 @@ function renderSetup() {
         </label>`).join("")}
     </div>
     <div class="games"><label><span class="gi">⬡</span>
-      <span class="gn">Vorhandene Plaketten<br><span class="gc">Obergrenze für „Anzahl Kacheln“</span></span>
+      <span class="gn">Vorhandene Plaketten<br><span class="gc">Obergrenze – gibt es mehr Paare, wird pro Runde zufällig ausgewählt</span></span>
       <input id="plq" type="number" min="4" step="2" value="${DRAFT.plaketten}" style="width:76px;font:inherit;font-size:17px;padding:6px 8px;border-radius:8px;border:1px solid rgba(120,144,173,.35);background:var(--bg);color:var(--text);text-align:center">
     </label></div>
     ${settingsPanel()}
