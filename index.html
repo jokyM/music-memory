@@ -4,14 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Music Memory</title>
-<style>
-/* ============================================================
-   SONGLISTE – hier deine Songs eintragen ("Interpret Titel")
-   Jeder Song braucht ZWEI Plaketten. 25 Songs = Tags ?t=1 bis ?t=50
-   ============================================================ */
-</style>
+<title>Memory</title>
 <script>
+/* ============================================================
+   SPIEL 1 – MUSIK: Songs als "Interpret Titel"
+   Jeder Song = 2 Plaketten
+   ============================================================ */
 const SONGS = [
   "a-ha Take On Me",
   "Michael Jackson Billie Jean",
@@ -20,50 +18,121 @@ const SONGS = [
   "ABBA Dancing Queen",
   "Nena 99 Luftballons",
 ];
-const SNIPPET  = 30;      // Sekunden (Hoerproben sind max. 30 s lang)
-const COUNTRY  = "DE";    // Apple-Store-Land fuer die Suche
-const SEED     = 4711;    // andere Zahl = andere Paar-Zuordnung der Plaketten
+const SNIPPET = 30;      // Sekunden (Hoerproben sind max. 30 s lang)
+const COUNTRY = "DE";    // Apple-Store-Land fuer die Suche
+
+/* ============================================================
+   SPIEL 2 – RECHNEN: [ "Aufgabe", "Ergebnis" ]
+   Jedes Paar = 2 Plaketten. Jedes Ergebnis nur EINMAL verwenden!
+   ============================================================ */
+const PAIRS = [
+  ["8 × 8",    "64"],
+  ["100 − 50", "50"],
+  ["7 × 6",    "42"],
+  ["45 + 36",  "81"],
+  ["90 : 3",   "30"],
+  ["13 + 12",  "25"],
+];
+
+/* ============================================================
+   SPIEL 3 – BILDER: JPEGs in den Ordner "bilder" hochladen
+   "bilder/x.jpg"            -> zwei gleiche Bilder bilden ein Paar
+   ["bilder/x.jpg", "Name"]  -> Bild + Name bilden ein Paar
+   ============================================================ */
+const BILDER = [
+  ["bilder/figur1.jpg", "Figur 1"],
+  ["bilder/figur2.jpg", "Figur 2"],
+  "bilder/figur3.jpg",
+  "bilder/figur4.jpg",
+  "bilder/figur5.jpg",
+  "bilder/figur6.jpg",
+];
+
+/* Welche Spiele im Menue erscheinen (Standard fuer neue Handys).
+   Aendern geht auch bequem auf der Setup-Seite (?setup). */
+const AKTIV = ["musik", "rechnen", "bilder"];
 </script>
 <style>
   :root {
     --bg: #14110f; --panel: #1f1a16; --bronze: #b08a62; --bronze-hi: #d9b48a;
-    --text: #efe6dc; --muted: #9c8f82; --ok: #8fbf7f; --err: #d98a7a;
+    --text: #efe6dc; --muted: #9c8f82; --err: #d98a7a;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; height: 100%; }
+  html, body { margin: 0; min-height: 100%; }
   body {
     background-color: var(--bg);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 32L0 82V50l28 16 28-16v32L28 98z' fill='none' stroke='%23b08a62' stroke-opacity='0.09' stroke-width='1.5'/%3E%3C/svg%3E");
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; min-height: 100dvh;
     padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
   }
-  h1 { font-size: 15px; letter-spacing: .25em; text-transform: uppercase; color: var(--bronze); font-weight: 600; margin: 0 0 40px; }
+  h1 { font-size: 15px; letter-spacing: .25em; text-transform: uppercase; color: var(--bronze); font-weight: 600; margin: 0 0 40px; text-align: center; }
+  a.menu { position: fixed; top: calc(14px + env(safe-area-inset-top)); left: 16px; color: var(--muted); text-decoration: none; font-size: 14px; }
+  #status { margin-top: 32px; min-height: 1.4em; font-size: 17px; color: var(--muted); text-align: center; }
+  .bad { color: var(--err); }
+
+  /* Menue */
+  .choices { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .choice { width: 104px; height: 116px; border: 0; background: none; padding: 0; cursor: pointer; position: relative; color: var(--bg); font: inherit; }
+  .choice svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .choice .lbl { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 4px; font-weight: 800; font-size: 15px; }
+  .choice .ico { font-size: 28px; line-height: 1; }
+  .choice.off { opacity: .4; }
+  .choice:active { transform: scale(.96); }
+  .info { margin-top: 30px; text-align: center; color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 340px; }
+  .info b { color: var(--text); }
+  .newgame { margin-top: 22px; background: var(--bronze); color: var(--bg); border: 0; border-radius: 12px; padding: 14px 26px; font-weight: 700; font-size: 17px; cursor: pointer; }
+  .toast { margin-top: 14px; color: var(--bronze-hi); font-size: 14px; min-height: 1.3em; }
+
+  /* Musik-Knopf */
   .hexbtn { position: relative; width: 240px; height: 240px; border: 0; background: none; padding: 0; cursor: pointer; }
   .hexbtn svg { width: 100%; height: 100%; overflow: visible; }
-  .hexbtn .shape { fill: url(#bronzeGrad); transition: transform .15s; transform-origin: center; }
+  .hexbtn .shape { fill: url(#g); transition: transform .15s; transform-origin: center; }
   .hexbtn:active .shape { transform: scale(.96); }
   .hexbtn .track { fill: none; stroke: rgba(176,138,98,.2); stroke-width: 6; }
   .hexbtn .prog  { fill: none; stroke: var(--bronze-hi); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset .25s linear; }
   .hexbtn .icon  { fill: var(--bg); }
   .hexbtn[disabled] { opacity: .45; cursor: default; }
-  #status { margin-top: 32px; min-height: 1.4em; font-size: 17px; color: var(--muted); text-align: center; }
-  .eq { display: inline-flex; gap: 3px; height: 14px; align-items: flex-end; margin-left: 8px; vertical-align: middle; }
-  .eq i { width: 3px; background: var(--bronze-hi); animation: eq .8s infinite ease-in-out; }
-  .eq i:nth-child(2) { animation-delay: .2s } .eq i:nth-child(3) { animation-delay: .4s }
+  .eqz { display: inline-flex; gap: 3px; height: 14px; align-items: flex-end; margin-left: 8px; vertical-align: middle; }
+  .eqz i { width: 3px; background: var(--bronze-hi); animation: eq .8s infinite ease-in-out; }
+  .eqz i:nth-child(2) { animation-delay: .2s } .eqz i:nth-child(3) { animation-delay: .4s }
   @keyframes eq { 0%,100% { height: 4px } 50% { height: 14px } }
 
-  /* Setup-Ansicht */
+  /* Rechen-Karte */
+  .card { width: 280px; height: 280px; perspective: 900px; cursor: pointer; }
+  .flip { position: relative; width: 100%; height: 100%; transition: transform .6s cubic-bezier(.3,.7,.2,1); transform-style: preserve-3d; }
+  .card.open .flip { transform: rotateY(180deg); }
+  .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; align-items: center; justify-content: center; }
+  .face svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .back { transform: rotateY(180deg); }
+  .q { font-size: 46px; font-weight: 800; color: var(--bg); position: relative; text-align: center; padding: 0 40px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .q.long { font-size: 34px; }
+  .hint { position: relative; color: var(--bg); font-size: 18px; font-weight: 700; letter-spacing: .1em; }
+
+  /* Setup */
   .setup { width: 100%; max-width: 640px; }
   .setup h2 { color: var(--bronze); font-size: 20px; margin: 0 0 6px; }
   .setup p { color: var(--muted); margin: 0 0 20px; line-height: 1.5; font-size: 14px; }
   .row { background: var(--panel); border: 1px solid rgba(176,138,98,.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: center; }
   .row .n { font-weight: 700; color: var(--bronze); min-width: 28px; }
-  .row .info { flex: 1; min-width: 0; }
-  .row .found { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .row .meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .row .bad { color: var(--err); }
+  .row .txt { flex: 1; min-width: 0; }
+  .row .main { font-size: 16px; font-weight: 600; }
+  .row .meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .games { background: var(--panel); border: 1px solid rgba(176,138,98,.2); border-radius: 14px; padding: 6px 14px; margin-bottom: 26px; }
+  .games label { display: flex; align-items: center; gap: 14px; padding: 12px 0; cursor: pointer; font-size: 16px; }
+  .games label + label { border-top: 1px solid rgba(176,138,98,.12); }
+  .games .gi { width: 30px; text-align: center; color: var(--bronze-hi); font-size: 20px; font-weight: 800; }
+  .games .gn { flex: 1; }
+  .games .gc { color: var(--muted); font-size: 13px; }
+  .sw { position: relative; width: 50px; height: 30px; flex: none; }
+  .sw input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .sw span { position: absolute; inset: 0; border-radius: 15px; background: #3a322b; transition: background .2s; }
+  .sw span::after { content: ""; position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%; background: var(--text); transition: transform .2s; }
+  .sw input:checked + span { background: var(--bronze); }
+  .sw input:checked + span::after { transform: translateX(20px); }
+  .setup h3 { color: var(--bronze); font-size: 13px; letter-spacing: .15em; text-transform: uppercase; margin: 0 0 10px; }
   .row button { background: var(--bronze); color: var(--bg); border: 0; border-radius: 8px; padding: 8px 12px; font-weight: 600; cursor: pointer; }
   code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--bronze-hi); word-break: break-all; }
 </style>
@@ -71,31 +140,51 @@ const SEED     = 4711;    // andere Zahl = andere Paar-Zuordnung der Plaketten
 <body>
 <svg width="0" height="0" style="position:absolute">
   <defs>
-    <linearGradient id="bronzeGrad" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#d9b48a"/><stop offset=".55" stop-color="#a77f57"/><stop offset="1" stop-color="#6e5238"/>
     </linearGradient>
+    <pattern id="hx" width="28" height="49" patternUnits="userSpaceOnUse" patternTransform="scale(.7)">
+      <path d="M14 33L0 25V8L14 0l14 8v17L14 33zm0 16L0 41V25l14 8 14-8v16L14 49z" fill="none" stroke="#14110f" stroke-opacity=".25" stroke-width="1.5"/>
+    </pattern>
   </defs>
 </svg>
 <div id="app"></div>
 
 <script>
-// ---------- Hilfsfunktionen ----------
+// ---------- Speicher (pro Handy) ----------
+function load(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } }
+function save(k, v) { try { localStorage.setItem(k, v); } catch {} }
+
+let MODE = load("mode", "musik");                 // "musik" | "rechnen"
+let SEED = parseInt(load("seed", "4711"), 10);
+
+const GAMES = {
+  musik:   { name: "Musik-Memory",  icon: "♪",   count: () => SONGS.length },
+  rechnen: { name: "Rechen-Memory", icon: "×÷", count: () => PAIRS.length },
+  bilder:  { name: "Bilder-Memory", icon: "★",  count: () => BILDER.length },
+};
+
+// Aktivierte Spiele (pro Handy gespeichert, sonst AKTIV aus der Konfiguration)
+let ENABLED = load("enabled", AKTIV.join(",")).split(",").filter(k => GAMES[k]);
+if (!ENABLED.length) ENABLED = Object.keys(GAMES);
+if (!ENABLED.includes(MODE)) { MODE = ENABLED[0]; save("mode", MODE); }
+
+// ---------- Mischen ----------
 function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
   t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-
-// Plakette t (1..2N) -> Song-Index (0..N-1); je zwei Plaketten pro Song, gemischt
-function pairing(n) {
-  const slots = [...Array(2 * n).keys()], rnd = mulberry32(SEED);
-  for (let i = slots.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [slots[i], slots[j]] = [slots[j], slots[i]]; }
-  return slots.map(s => s >> 1); // map[t-1] = songIndex
+// Plakette t (1..2N) -> [Paar-Index, Seite 0/1]
+function pairing(n, seed) {
+  const s = [...Array(2 * n).keys()], r = mulberry32(seed);
+  for (let i = s.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [s[i], s[j]] = [s[j], s[i]]; }
+  return s.map(x => [x >> 1, x & 1]);
 }
 
 function itunes(term) {
   return new Promise((resolve, reject) => {
     const cb = "cb_" + Math.random().toString(36).slice(2), s = document.createElement("script");
-    const timer = setTimeout(() => { cleanup(); reject("timeout"); }, 8000);
+    const timer = setTimeout(() => { cleanup(); reject("network"); }, 8000);
     function cleanup() { clearTimeout(timer); delete window[cb]; s.remove(); }
-    window[cb] = d => { cleanup(); resolve(d.results && d.results[0]); };
+    window[cb] = d => { cleanup(); d.results && d.results[0] && d.results[0].previewUrl ? resolve(d.results[0]) : reject("notfound"); };
     s.onerror = () => { cleanup(); reject("network"); };
     s.src = `https://itunes.apple.com/search?entity=song&limit=1&country=${COUNTRY}&term=${encodeURIComponent(term)}&callback=${cb}`;
     document.head.appendChild(s);
@@ -104,97 +193,185 @@ function itunes(term) {
 
 const app = document.getElementById("app");
 const params = new URLSearchParams(location.search);
-const MAP = pairing(SONGS.length);
 const BASE = location.origin + location.pathname;
+const HEXP = "M140 10 L253 75 L253 205 L140 270 L27 205 L27 75 Z";
+const HEX_PAT = `<svg viewBox="0 0 280 280"><path d="${HEXP}" fill="url(#g)"/><path d="${HEXP}" fill="url(#hx)"/></svg>`;
+const HEX_PLAIN = `<svg viewBox="0 0 280 280"><path d="${HEXP}" fill="url(#g)"/></svg>`;
+const menuLink = `<a class="menu" href="${location.pathname}">‹ Menü</a>`;
 
-// ---------- Spielansicht ----------
-const HEX = "M120 12 L213 66 L213 174 L120 228 L27 174 L27 66 Z";
-const PERIM = 6 * 108;
-
-function renderGame(tag) {
+// ---------- Menue ----------
+function renderMenu(msg = "") {
+  const g = GAMES[MODE], n = g.count();
+  app.className = "";
   app.innerHTML = `
-    <h1>Music Memory</h1>
+    <h1>Memory</h1>
+    <div class="choices">
+      ${Object.entries(GAMES).filter(([k]) => ENABLED.includes(k)).map(([k, v]) => `
+        <button class="choice ${k === MODE ? "" : "off"}" data-mode="${k}">
+          ${HEX_PAT}<span class="lbl"><span class="ico">${v.icon}</span>${v.name.split("-")[0]}</span>
+        </button>`).join("")}
+    </div>
+    <div class="info">Aktuell: <b>${g.name}</b><br>${n} Paare · Plaketten <b>1 bis ${2 * n}</b> auslegen</div>
+    <button class="newgame" id="new">Neues Spiel – neu mischen</button>
+    <div class="toast">${msg}</div>`;
+  app.querySelectorAll(".choice").forEach(b => b.onclick = () => {
+    MODE = b.dataset.mode; save("mode", MODE); newSeed();
+    renderMenu(`${GAMES[MODE].name} gewählt – Paare neu gemischt`);
+  });
+  document.getElementById("new").onclick = () => { newSeed(); renderMenu("Paare neu gemischt – viel Spaß!"); };
+}
+function newSeed() { SEED = Math.floor(Math.random() * 1e9); save("seed", String(SEED)); }
+
+// ---------- Plakette ----------
+function renderTag(tag) {
+  const n = GAMES[MODE].count(), map = pairing(n, SEED);
+  history.replaceState(null, "", location.pathname);
+  if (!tag || tag < 1) {
+    app.innerHTML = `${menuLink}<h1>${GAMES[MODE].name}</h1><div id="status"><span class="bad">Unbekannte Plakette – nochmal antippen</span></div>`;
+    return;
+  }
+  if (tag > map.length) {
+    app.innerHTML = `${menuLink}<h1>${GAMES[MODE].name}</h1><div id="status">Diese Plakette spielt in diesem Spiel nicht mit.<br>Nur Plaketten 1 bis ${map.length} auslegen.</div>`;
+    return;
+  }
+  const [p, side] = map[tag - 1];
+  if (MODE === "musik") renderSong(SONGS[p]);
+  else if (MODE === "rechnen") renderMath(PAIRS[p][side]);
+  else renderPicture(BILDER[p], side);
+}
+
+// Bild-Paar: String -> gleiches Bild zweimal; [Bild, Name] -> Seite 0 Bild, Seite 1 Name
+function pictureSide(entry, side) {
+  if (typeof entry === "string") return { img: entry };
+  return side === 0 ? { img: entry[0] } : { text: entry[1] };
+}
+function renderPicture(entry, side) {
+  const v = pictureSide(entry, side);
+  const back = v.img
+    ? `<svg viewBox="0 0 280 280"><defs><clipPath id="hc"><path d="${HEXP}"/></clipPath></defs>
+         <path d="${HEXP}" fill="url(#g)"/>
+         <image href="${v.img}" x="27" y="10" width="226" height="260" preserveAspectRatio="xMidYMid slice" clip-path="url(#hc)"/>
+         <path d="${HEXP}" fill="none" stroke="#d9b48a" stroke-width="6"/></svg>`
+    : `${HEX_PLAIN}<span class="q ${v.text.length > 7 ? "long" : ""}">${v.text}</span>`;
+  app.innerHTML = `${menuLink}
+    <h1>Bilder-Memory</h1>
+    <div class="card" id="card"><div class="flip">
+      <div class="face front">${HEX_PAT}<span class="hint">AUFDECKEN</span></div>
+      <div class="face back">${back}</div>
+    </div></div>
+    <div id="status">Tippen zum Aufdecken</div>`;
+  const card = document.getElementById("card"), st = document.getElementById("status");
+  if (v.img) { const im = new Image(); im.onerror = () => st.innerHTML = `<span class="bad">Bild „${v.img}“ nicht gefunden</span>`; im.src = v.img; }
+  card.onclick = () => { card.classList.toggle("open"); st.textContent = card.classList.contains("open") ? "Tippen zum Verdecken" : "Tippen zum Aufdecken"; };
+}
+
+function renderMath(text) {
+  app.innerHTML = `${menuLink}
+    <h1>Rechen-Memory</h1>
+    <div class="card" id="card"><div class="flip">
+      <div class="face front">${HEX_PAT}<span class="hint">AUFDECKEN</span></div>
+      <div class="face back">${HEX_PLAIN}<span class="q ${text.length > 7 ? "long" : ""}">${text}</span></div>
+    </div></div>
+    <div id="status">Tippen zum Aufdecken</div>`;
+  const card = document.getElementById("card"), st = document.getElementById("status");
+  card.onclick = () => { card.classList.toggle("open"); st.textContent = card.classList.contains("open") ? "Tippen zum Verdecken" : "Tippen zum Aufdecken"; };
+}
+
+const HEX = "M120 12 L213 66 L213 174 L120 228 L27 174 L27 66 Z", PERIM = 6 * 108;
+function renderSong(term) {
+  app.innerHTML = `${menuLink}
+    <h1>Musik-Memory</h1>
     <button class="hexbtn" id="play" disabled aria-label="Abspielen">
       <svg viewBox="0 0 240 240">
         <path class="track" d="${HEX}" transform="translate(120 120) scale(1.08) translate(-120 -120)"/>
-        <path class="prog" id="prog" d="${HEX}" transform="translate(120 120) scale(1.08) translate(-120 -120)"
-              stroke-dasharray="${PERIM}" stroke-dashoffset="${PERIM}"/>
+        <path class="prog" id="prog" d="${HEX}" transform="translate(120 120) scale(1.08) translate(-120 -120)" stroke-dasharray="${PERIM}" stroke-dashoffset="${PERIM}"/>
         <path class="shape" d="${HEX}"/>
         <path class="icon" id="icon" d="M100 82 L162 120 L100 158 Z"/>
       </svg>
     </button>
     <div id="status">Lade …</div>`;
-
-  const btn = document.getElementById("play"), status = document.getElementById("status");
+  const btn = document.getElementById("play"), st = document.getElementById("status");
   const prog = document.getElementById("prog"), icon = document.getElementById("icon");
   const audio = new Audio(); audio.preload = "auto";
   let timer = null, started = 0;
-
-  if (!tag || tag < 1 || tag > MAP.length) {
-    status.innerHTML = `<span class="bad">Unbekannte Plakette</span>`; return;
-  }
-  // Nummer aus der Adresszeile entfernen, damit niemand vergleichen kann
-  history.replaceState(null, "", location.pathname);
-
-  itunes(SONGS[MAP[tag - 1]]).then(r => {
-    if (!r || !r.previewUrl) throw "notfound";
-    audio.src = r.previewUrl;
-    btn.disabled = false; status.textContent = "Tippen zum Abspielen";
-  }).catch(e => { status.innerHTML = `<span class="bad">${e === "notfound" ? "Song nicht gefunden – Setup prüfen" : "Keine Verbindung zu Apple – Internet prüfen"}</span>`; });
-
   const PLAY = "M100 82 L162 120 L100 158 Z", STOP = "M94 90 H146 V150 H94 Z";
-  function stop() {
-    audio.pause(); audio.currentTime = 0; clearInterval(timer);
-    prog.style.strokeDashoffset = PERIM; icon.setAttribute("d", PLAY);
-    status.textContent = "Nochmal? Tippen";
-  }
-  btn.addEventListener("click", () => {
+
+  itunes(term).then(r => { audio.src = r.previewUrl; btn.disabled = false; st.textContent = "Tippen zum Abspielen"; })
+    .catch(e => { st.innerHTML = `<span class="bad">${e === "notfound" ? "Song nicht gefunden – Setup prüfen" : "Keine Verbindung zu Apple – Internet prüfen"}</span>`; });
+
+  function stop() { audio.pause(); audio.currentTime = 0; clearInterval(timer); prog.style.strokeDashoffset = PERIM; icon.setAttribute("d", PLAY); st.textContent = "Nochmal? Tippen"; }
+  btn.onclick = () => {
     if (!audio.paused) return stop();
     audio.currentTime = 0;
     audio.play().then(() => {
       icon.setAttribute("d", STOP); started = Date.now();
-      status.innerHTML = `Hör genau hin <span class="eq"><i></i><i></i><i></i></span>`;
-      timer = setInterval(() => {
-        const f = Math.min((Date.now() - started) / 1000 / SNIPPET, 1);
-        prog.style.strokeDashoffset = PERIM * (1 - f);
-        if (f >= 1) stop();
-      }, 200);
-    }).catch(() => { status.innerHTML = `<span class="bad">Wiedergabe blockiert – nochmal tippen</span>`; });
-  });
+      st.innerHTML = `Hör genau hin <span class="eqz"><i></i><i></i><i></i></span>`;
+      timer = setInterval(() => { const f = Math.min((Date.now() - started) / 1000 / SNIPPET, 1); prog.style.strokeDashoffset = PERIM * (1 - f); if (f >= 1) stop(); }, 200);
+    }).catch(() => { st.innerHTML = `<span class="bad">Wiedergabe blockiert – nochmal tippen</span>`; });
+  };
   audio.addEventListener("ended", stop);
 }
 
-// ---------- Setup-Ansicht (?setup) ----------
+// ---------- Setup / Spielleiter-Ansicht ----------
 function renderSetup() {
-  const n = SONGS.length;
+  const g = GAMES[MODE], n = g.count(), map = pairing(n, SEED);
+  const tagsOf = i => [0, 1].map(s => map.findIndex(([p, ss]) => p === i && ss === s) + 1);
   app.className = "setup";
+  const dupes = MODE === "rechnen" ? PAIRS.map(p => p[1].trim()).filter((r, i, a) => a.indexOf(r) !== i) : [];
   app.innerHTML = `
-    <h2>Setup · ${n} Songs = ${2 * n} Plaketten</h2>
-    <p>Schreib mit NFC Tools auf die Plaketten die Adressen
-       <code>${BASE}?t=1</code> bis <code>${BASE}?t=${2 * n}</code> – in beliebiger Reihenfolge.
-       Welche zwei zusammengehören, steht unten. Diese Seite nicht den Mitspielern zeigen!</p>
+    <h3>Spiele im Menü</h3>
+    <div class="games">
+      ${Object.entries(GAMES).map(([k, v]) => `
+        <label><span class="gi">${v.icon}</span>
+          <span class="gn">${v.name}<br><span class="gc">${v.count()} Paare</span></span>
+          <span class="sw"><input type="checkbox" data-game="${k}" ${ENABLED.includes(k) ? "checked" : ""}><span></span></span>
+        </label>`).join("")}
+    </div>
+    <h3>Zuordnung</h3>
+    <h2>${g.name} · ${n} Paare = ${2 * n} Plaketten</h2>
+    <p>Tags beschriften mit <code>${BASE}?t=1</code> bis <code>?t=${Math.max(SONGS.length, PAIRS.length, BILDER.length) * 2}</code>.
+       Unten die Zuordnung der <b>aktuellen</b> Runde auf diesem Handy – nach „Neues Spiel“ ändert sie sich.
+       Nicht den Mitspielern zeigen! · <a href="${location.pathname}" style="color:var(--bronze-hi)">Menü</a></p>
+    ${dupes.length ? `<p class="bad">Achtung: Ergebnis ${[...new Set(dupes)].join(", ")} kommt mehrfach vor.</p>` : ""}
     <div id="list"></div>`;
+  app.querySelectorAll("[data-game]").forEach(cb => cb.onchange = () => {
+    const on = [...app.querySelectorAll("[data-game]:checked")].map(c => c.dataset.game);
+    if (!on.length) { cb.checked = true; return; }          // mindestens ein Spiel bleibt aktiv
+    ENABLED = on; save("enabled", on.join(","));
+    if (!ENABLED.includes(MODE)) { MODE = ENABLED[0]; save("mode", MODE); newSeed(); }
+    renderSetup();
+  });
   const list = document.getElementById("list"), audio = new Audio();
-  SONGS.forEach((term, i) => {
-    const tags = MAP.map((s, t) => s === i ? t + 1 : null).filter(Boolean);
-    const row = document.createElement("div"); row.className = "row";
-    row.innerHTML = `<div class="n">${i + 1}</div>
-      <div class="info"><div class="found">${term}</div>
-      <div class="meta">Plaketten ${tags.join(" + ")} · <span>suche …</span></div></div>`;
+  const items = MODE === "musik" ? SONGS : MODE === "rechnen" ? PAIRS : BILDER;
+  items.forEach((it, i) => {
+    const [a, b] = tagsOf(i), row = document.createElement("div"); row.className = "row";
+    if (MODE === "bilder") {
+      const img = typeof it === "string" ? it : it[0];
+      const desc = typeof it === "string" ? `Plaketten ${a} + ${b} zeigen beide das Bild` : `Plakette ${a} zeigt das Bild · Plakette ${b} zeigt „${it[1]}“`;
+      row.innerHTML = `<img src="${img}" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:8px;background:#000">
+        <div class="txt"><div class="main">${img.split("/").pop()}</div><div class="meta">${desc}</div></div>`;
+      row.querySelector("img").onerror = e => { e.target.replaceWith(Object.assign(document.createElement("div"), { className: "n bad", textContent: "✕" })); row.querySelector(".meta").innerHTML += ` · <span class="bad">Datei fehlt</span>`; };
+    } else if (MODE === "rechnen") {
+      row.innerHTML = `<div class="n">${i + 1}</div><div class="txt"><div class="main">${it[0]} = ${it[1]}</div>
+        <div class="meta">Plakette ${a} zeigt „${it[0]}“ · Plakette ${b} zeigt „${it[1]}“</div></div>`;
+    } else {
+      row.innerHTML = `<div class="n">${i + 1}</div><div class="txt"><div class="main">${it}</div>
+        <div class="meta">Plaketten ${a} + ${b} · <span>suche …</span></div></div>`;
+      const meta = row.querySelector(".meta span");
+      itunes(it).then(r => {
+        meta.textContent = `gefunden: ${r.artistName} – ${r.trackName}`;
+        const btn = document.createElement("button"); btn.textContent = "▶";
+        btn.onclick = () => { if (audio.src === r.previewUrl && !audio.paused) return audio.pause(); audio.src = r.previewUrl; audio.play(); };
+        row.appendChild(btn);
+      }).catch(e => { meta.className = "bad"; meta.textContent = e === "notfound" ? "nicht gefunden – Schreibweise ändern" : "keine Verbindung zu Apple"; });
+    }
     list.appendChild(row);
-    const meta = row.querySelector(".meta span");
-    itunes(term).then(r => {
-      if (!r || !r.previewUrl) throw 0;
-      meta.textContent = `gefunden: ${r.artistName} – ${r.trackName}`;
-      const b = document.createElement("button"); b.textContent = "▶";
-      b.onclick = () => { if (audio.src === r.previewUrl && !audio.paused) { audio.pause(); return; } audio.src = r.previewUrl; audio.play(); };
-      row.appendChild(b);
-    }).catch(e => { meta.className = "bad"; meta.textContent = e === 0 ? "nicht gefunden – Schreibweise ändern" : "keine Verbindung zu Apple"; });
   });
 }
 
 if (params.has("setup")) renderSetup();
-else renderGame(parseInt(params.get("t"), 10));
+else if (params.has("t")) renderTag(parseInt(params.get("t"), 10));
+else renderMenu();
 </script>
 </body>
 </html>
