@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Memory</title>
 <script>
-const VERSION = "2.7";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
+const VERSION = "2.9";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
 
 /* ============================================================
    SPIEL 1 – MUSIK: Songs als "Interpret Titel"
@@ -167,6 +167,21 @@ const PLAKETTEN = 24;
   .sw input:checked + span { background: var(--bronze); }
   .sw input:checked + span::after { transform: translateX(20px); }
   .setup h3 { color: var(--bronze); font-size: 13px; letter-spacing: .15em; text-transform: uppercase; margin: 0 0 10px; }
+  .scbox { margin-bottom: 26px; }
+  .scbox summary { display: flex; align-items: center; gap: 14px; padding: 12px 0; cursor: pointer; list-style: none; font-size: 16px; }
+  .scbox summary::-webkit-details-marker { display: none; }
+  .scbox summary::after { content: "▾"; color: var(--muted); margin-left: auto; transition: transform .2s; }
+  .scbox[open] summary::after { transform: rotate(180deg); }
+  .scsteps { margin: 4px 0 10px; padding-left: 20px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+  .scsteps b { color: var(--text); font-weight: 600; }
+  .schint { font-size: 13px !important; margin: 0 0 12px !important; }
+  .sc { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid rgba(120,144,173,.12); }
+  .sc .scn { font-weight: 800; color: var(--bronze-hi); min-width: 22px; text-align: right; }
+  .sc .scu { flex: 1; min-width: 0; white-space: nowrap; font-size: 13px; }
+  .sc.ok .scn, .sc.ok .scu { opacity: .45; }
+  .sccopy { background: var(--bronze); color: var(--bg); border: 0; border-radius: 8px; padding: 7px 10px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .scok { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 13px; cursor: pointer; }
+  .scok input { width: 20px; height: 20px; accent-color: var(--bronze); }
   .row button { background: var(--bronze); color: var(--bg); border: 0; border-radius: 8px; padding: 8px 12px; font-weight: 600; cursor: pointer; }
   code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--bronze-hi); word-break: break-all; }
 </style>
@@ -363,7 +378,9 @@ function evaluateTurn(tag, pair, map) {
   const st = getState() || blankState(), total = map.length / 2;
   let kind;
   if (st.found.includes(pair)) kind = "found";
-  else if (st.first === null && st.last && st.last.tag === tag) kind = "replay";
+  // Nur ein versehentliches Doppel-Scannen (gleiche Plakette innerhalb weniger Sekunden) gilt als "nochmal anschauen".
+  // Wer eine Karte spaeter bewusst wieder aufdeckt, beginnt damit einen neuen Zug.
+  else if (st.first === null && st.last && st.last.tag === tag && Date.now() - (st.last.at || 0) < 10000) kind = "replay";
   else if (st.first === null || st.first === tag) { st.first = tag; kind = "first"; }
   else {
     const match = map[st.first - 1][0] === pair;
@@ -371,7 +388,7 @@ function evaluateTurn(tag, pair, map) {
     kind = match ? (st.found.length === total ? "done" : "match") : "miss";
     st.first = null;
   }
-  if (kind !== "found" && kind !== "replay") st.last = { tag, kind };
+  if (kind !== "found" && kind !== "replay") st.last = { tag, kind, at: Date.now() };
   putState(st);
   return { kind, found: st.found.length, total };
 }
@@ -548,6 +565,59 @@ function renderSong(term, secs = SNIPPET, title = "Musik-Memory") {
 }
 
 // ---------- Setup / Spielleiter-Ansicht ----------
+// ---------- Anleitung: iPhone ohne Banner (Kurzbefehle-Automation pro Plakette) ----------
+const doneSC = () => { try { return JSON.parse(load("sc_done", "[]")); } catch { return []; } };
+function shortcutPanel() {
+  const n = plaques(), done = doneSC();
+  const rows = [...Array(n)].map((_, i) => {
+    const t = i + 1, url = `${BASE}?t=${t}`, ok = done.includes(t);
+    return `<div class="sc ${ok ? "ok" : ""}">
+      <span class="scn">${t}</span>
+      <code class="scu" title="${url}">…/?t=${t}</code>
+      <button class="sccopy" data-url="${url}">Kopieren</button>
+      <label class="scok" title="eingerichtet"><input type="checkbox" data-sc="${t}" ${ok ? "checked" : ""}>fertig</label>
+    </div>`;
+  }).join("");
+  return `<details class="games scbox" ${load("sc_open", "") ? "open" : ""}>
+    <summary><span class="gi">📱</span><span class="gn">iPhone ohne Banner einrichten<br>
+      <span class="gc">${done.length} von ${n} Plaketten eingerichtet · nur für dieses iPhone</span></span></summary>
+    <ol class="scsteps">
+      <li>App <b>Kurzbefehle</b> öffnen → unten <b>Automation</b> → <b>+</b> (bzw. „Neue Automation“).</li>
+      <li><b>NFC</b> wählen → <b>Scannen</b> → Plakette oben ans iPhone halten → Namen eingeben, z. B. „Plakette 1“.</li>
+      <li><b>Sofort ausführen</b> wählen und <b>„Bei Ausführung mitteilen“</b> ausschalten → <b>Weiter</b>.</li>
+      <li><b>Neuer leerer Kurzbefehl</b> → <b>Aktion hinzufügen</b> → nach <b>„URL öffnen“</b> suchen.</li>
+      <li>Hier unten bei der passenden Nummer <b>Kopieren</b> tippen, in der Aktion aufs URL-Feld tippen → <b>Einsetzen</b> → <b>Fertig</b>.</li>
+      <li>Bei der Nummer <b>„fertig“</b> abhaken, nächste Plakette.</li>
+    </ol>
+    <p class="schint">Tipp: Zuerst nur Plakette 1 einrichten und testen. Danach öffnet sie die Seite direkt, ohne Banner.</p>
+    ${rows}
+  </details>`;
+}
+function copyText(txt) {
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(txt);
+  const ta = document.createElement("textarea"); ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch {} ta.remove();
+  return Promise.resolve();
+}
+function wireShortcutPanel() {
+  const box = app.querySelector(".scbox"); if (!box) return;
+  box.addEventListener("toggle", () => save("sc_open", box.open ? "1" : ""));
+  box.querySelectorAll(".sccopy").forEach(b => b.onclick = e => {
+    e.preventDefault();
+    copyText(b.dataset.url).then(() => {
+      box.querySelectorAll(".sccopy").forEach(x => x.textContent = "Kopieren");
+      b.textContent = "Kopiert ✓";
+    });
+  });
+  box.querySelectorAll("[data-sc]").forEach(cb => cb.onchange = () => {
+    const t = +cb.dataset.sc, d = doneSC().filter(x => x !== t);
+    if (cb.checked) d.push(t);
+    save("sc_done", JSON.stringify(d.sort((a, b) => a - b)));
+    cb.closest(".sc").classList.toggle("ok", cb.checked);
+    box.querySelector(".gc").textContent = `${d.length} von ${plaques()} Plaketten eingerichtet · nur für dieses iPhone`;
+  });
+}
+
 let DRAFT = null;
 const draftJSON = () => `{\n  "aktiv": [${DRAFT.aktiv.map(k => `"${k}"`).join(", ")}],\n  "plaketten": ${DRAFT.plaketten}\n}\n`;
 function settingsPanel() {
@@ -594,6 +664,7 @@ function renderSetup() {
       <input id="plq" type="number" min="4" step="2" value="${DRAFT.plaketten}" style="width:76px;font:inherit;font-size:17px;padding:6px 8px;border-radius:8px;border:1px solid rgba(120,144,173,.35);background:var(--bg);color:var(--text);text-align:center">
     </label></div>
     ${settingsPanel()}
+    ${shortcutPanel()}
     <h3>Zuordnung</h3>
     <h2>${g.name} · diese Runde ${n} von ${g.count()} Paaren = ${2 * n} Kacheln</h2>
     <p>Tags beschriften mit <code>${BASE}?t=1</code> bis <code>?t=${Math.max(SONGS.length, PAIRS.length, BILDER.length) * 2}</code>.
@@ -610,6 +681,7 @@ function renderSetup() {
     const v = Math.max(4, parseInt(e.target.value, 10) || PLAKETTEN);
     DRAFT.plaketten = v - (v % 2); renderSetup();
   };
+  wireShortcutPanel();
   const copy = document.getElementById("copy");
   if (copy) copy.onclick = () => {
     const ta = document.getElementById("json"); ta.select();
@@ -617,6 +689,13 @@ function renderSetup() {
       .finally(() => { copy.textContent = "Kopiert ✓"; });
   };
   const list = document.getElementById("list"), audio = new Audio();
+  const seenTracks = {};   // trackId -> Suchbegriff (erkennt doppelte Songs)
+  const dupCheck = (r, term, meta) => {
+    const id = r.trackId || r.previewUrl;
+    if (seenTracks[id] && seenTracks[id] !== term)
+      meta.insertAdjacentHTML("afterend", `<div class="meta bad">⚠ gleicher Song wie „${seenTracks[id]}“ – Suchbegriff ändern!</div>`);
+    else seenTracks[id] = term;
+  };
   const items = MODE === "musik" ? SONGS : MODE === "rechnen" ? PAIRS : BILDER;
   items.forEach((it, i) => {
     if (!map.some(([pp]) => pp === i)) return;                  // spielt diese Runde nicht mit
@@ -628,7 +707,7 @@ function renderSetup() {
       row.querySelector("img").onerror = e => { e.target.replaceWith(Object.assign(document.createElement("div"), { className: "n bad", textContent: "✕" })); row.querySelector(".meta").insertAdjacentHTML("beforeend", ` · <span class="bad">Bild fehlt</span>`); };
       const meta = row.querySelector(".meta span");
       itunes(it.song).then(r => {
-        meta.textContent = `gefunden: ${r.artistName} – ${r.trackName}`;
+        meta.textContent = `gefunden: ${r.artistName} – ${r.trackName}`; dupCheck(r, it.song || it, meta);
         const btn = document.createElement("button"); btn.textContent = "▶";
         btn.onclick = () => { if (audio.src === r.previewUrl && !audio.paused) return audio.pause(); audio.src = r.previewUrl; audio.play(); };
         row.appendChild(btn);
@@ -647,7 +726,7 @@ function renderSetup() {
         <div class="meta">Plaketten ${a} + ${b} · <span>suche …</span></div></div>`;
       const meta = row.querySelector(".meta span");
       itunes(it).then(r => {
-        meta.textContent = `gefunden: ${r.artistName} – ${r.trackName}`;
+        meta.textContent = `gefunden: ${r.artistName} – ${r.trackName}`; dupCheck(r, it.song || it, meta);
         const btn = document.createElement("button"); btn.textContent = "▶";
         btn.onclick = () => { if (audio.src === r.previewUrl && !audio.paused) return audio.pause(); audio.src = r.previewUrl; audio.play(); };
         row.appendChild(btn);
