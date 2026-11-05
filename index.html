@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Memory</title>
 <script>
-const VERSION = "3.6";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
+const VERSION = "3.9";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
 
 /* ============================================================
    SPIEL 1 – MUSIK: Songs als "Interpret Titel"
@@ -73,7 +73,7 @@ const AKTIV = ["musik", "rechnen", "bilder"];
 /* Aussehen: "prinzessin" (rosa, Glitzer, Ballons) oder "stahl" (stahlblau, schlicht) */
 const THEMA = "prinzessin";
 /* Name des Geburtstagskindes fuer die Ueberschrift, z. B. "Lena" – leer lassen fuer "Zauber-Memory" */
-const KIND = "Lara";
+const KIND = "";
 
 /* Ersatzwert: wie viele Plaketten du besitzt (Obergrenze fuer die Kachel-Auswahl). */
 const PLAKETTEN = 24;
@@ -185,10 +185,10 @@ const PLAKETTEN = 24;
   @keyframes sway { from { transform: rotate(-8deg); } to { transform: rotate(8deg); } }
   .confetti { position: absolute; top: -20px; width: 9px; height: 14px; background: var(--c); border-radius: 2px; animation: fall var(--t) linear forwards; animation-delay: var(--dl); }
   @keyframes fall { to { transform: translate(var(--x), 110vh) rotate(var(--r)); } }
-  .bigword { position: fixed; left: 50%; top: 38%; transform: translate(-50%,-50%) scale(.2); font-size: 64px; font-weight: 900; white-space: nowrap;
+  .bigword { position: fixed; left: 50%; top: 38%; transform: translate(-50%,-50%) scale(.2); font-size: min(64px, 13vw); font-weight: 900; white-space: nowrap;
     color: #ffd36e; text-shadow: 0 0 20px rgba(255,211,110,.8), 0 4px 0 #b84d9a; animation: pop 1.8s cubic-bezier(.2,1.6,.4,1) forwards; font-family: ui-rounded, "SF Pro Rounded", system-ui, sans-serif; }
-  .bigword.soft { color: #ffd6ea; text-shadow: 0 0 16px rgba(255,180,220,.6), 0 3px 0 #7a3a9a; font-size: 46px; }
-  .bigword.huge { font-size: 40px; white-space: normal; width: 90vw; text-align: center; line-height: 1.15; animation-duration: 4s; }
+  .bigword.soft { color: #ffd6ea; text-shadow: 0 0 16px rgba(255,180,220,.6), 0 3px 0 #7a3a9a; font-size: min(46px, 11vw); }
+  .bigword.huge { font-size: 40px; white-space: normal; width: 90vw; text-align: center; line-height: 1.15; animation-duration: 2.6s; }
   @keyframes pop { 0% { transform: translate(-50%,-50%) scale(.2); opacity: 0; } 18% { transform: translate(-50%,-50%) scale(1.15); opacity: 1; } 30% { transform: translate(-50%,-50%) scale(1); }
     80% { opacity: 1; } 100% { transform: translate(-50%,-62%) scale(1); opacity: 0; } }
   .tear { position: absolute; font-size: 22px; animation: drip 1.4s ease-in forwards; animation-delay: var(--dl); opacity: 0; }
@@ -429,7 +429,7 @@ function renderMenu(msg = "") {
       <div class="choices"><div class="choice solo">${HEX_PAT}<span class="lbl"><span class="ico">${g.icon}</span>${T} Kacheln</span></div></div>
       <div class="progress"><b>${done}</b> von ${n} Paaren gefunden</div>
       <div class="bar"><i style="width:${n ? done / n * 100 : 0}%"></i></div>
-      <div class="info">${finished ? "Alle Paare gefunden! 👑🎉" : `${layout}<br>Halte die Plakette oben ans Handy.`}</div>
+      <div class="info">${finished ? "🎉 Game Over 🎉" : `${layout}<br>Halte die Plakette oben ans Handy.`}</div>
       <button class="newgame ${finished ? "" : "ghost"}" id="end">${finished ? "Neues Spiel" : "Spiel beenden"}</button>
       <div class="toast">${msg}</div>`;
     document.getElementById("end").onclick = () => {
@@ -566,7 +566,7 @@ function celebrate(kind) {
     confetti(); balloons(14); sparkles(x, y, 40, 240);
     setTimeout(() => sparkles(innerWidth * .25, innerHeight * .3, 24, 160), 700);
     setTimeout(() => sparkles(innerWidth * .75, innerHeight * .35, 24, 160), 1300);
-    bigWord(KIND ? `👑 ${KIND}, du bist eine Memory-Prinzessin! 👑` : "👑 Du bist eine Memory-Prinzessin! 👑", "huge", 4200);
+    setTimeout(() => bigWord("GAME OVER", "", 2600), 400);
   }
 }
 // Zauberstab: Glitzer bei jeder Beruehrung
@@ -664,10 +664,10 @@ function reveal() {
   const k = TURN.kind;
   const pick = a => a[Math.floor(Math.random() * a.length)];
   if (k === "match")      { el.textContent = `Ein Paar! ${TURN.found} von ${TURN.total} ⭐`; el.className = "result win show"; playSfx("match", sfxKaching); celebrate("match"); }
-  else if (k === "done")  { el.textContent = "Alle Paare gefunden! 👑"; el.className = "result win show"; playSfx("done", sfxFanfare); celebrate("done");
+  else if (k === "done")  { el.textContent = "🎉 Game Over 🎉"; el.className = "result win show"; playSfx("done", sfxFanfare); celebrate("done");
     // nach der Fanfare noch 2 Sekunden feiern, dann zurueck ins Hauptmenue
     decodeSfx("done").then(buf => setTimeout(() => { save("running", ""); location.href = location.pathname; },
-      ((buf ? buf.duration : 2.3) + 2) * 1000)); }
+      Math.max((buf ? buf.duration : 2.3) + 2, 5) * 1000)); }   // mind. 5 s, damit "GAME OVER" zu sehen ist
   else if (k === "miss")  { el.textContent = pick(["Fast! Nochmal versuchen 💪", "Oh, das war knapp! 🙈", "Nicht schlimm, weiter geht's! 🌈"]); el.className = "result lose show"; playSfx("miss", sfxLoser); celebrate("miss"); }
   else if (k === "first") { celebrate("first"); el.textContent = pick(["Super! Wo ist die zweite? 🔎", "Und jetzt die passende Karte! ✨", "Merk dir die gut! 💭"]); el.className = "result show"; el.style.fontSize = "16px"; el.style.fontWeight = "600"; }
 }
