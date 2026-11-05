@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Memory</title>
 <script>
-const VERSION = "3.5";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
+const VERSION = "3.6";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
 
 /* ============================================================
    SPIEL 1 – MUSIK: Songs als "Interpret Titel"
@@ -664,7 +664,10 @@ function reveal() {
   const k = TURN.kind;
   const pick = a => a[Math.floor(Math.random() * a.length)];
   if (k === "match")      { el.textContent = `Ein Paar! ${TURN.found} von ${TURN.total} ⭐`; el.className = "result win show"; playSfx("match", sfxKaching); celebrate("match"); }
-  else if (k === "done")  { el.textContent = "Alle Paare gefunden! 👑"; el.className = "result win show"; playSfx("done", sfxFanfare); celebrate("done"); }
+  else if (k === "done")  { el.textContent = "Alle Paare gefunden! 👑"; el.className = "result win show"; playSfx("done", sfxFanfare); celebrate("done");
+    // nach der Fanfare noch 2 Sekunden feiern, dann zurueck ins Hauptmenue
+    decodeSfx("done").then(buf => setTimeout(() => { save("running", ""); location.href = location.pathname; },
+      ((buf ? buf.duration : 2.3) + 2) * 1000)); }
   else if (k === "miss")  { el.textContent = pick(["Fast! Nochmal versuchen 💪", "Oh, das war knapp! 🙈", "Nicht schlimm, weiter geht's! 🌈"]); el.className = "result lose show"; playSfx("miss", sfxLoser); celebrate("miss"); }
   else if (k === "first") { celebrate("first"); el.textContent = pick(["Super! Wo ist die zweite? 🔎", "Und jetzt die passende Karte! ✨", "Merk dir die gut! 💭"]); el.className = "result show"; el.style.fontSize = "16px"; el.style.fontWeight = "600"; }
 }
