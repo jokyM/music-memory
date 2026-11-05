@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Memory</title>
 <script>
-const VERSION = "3.1";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
+const VERSION = "3.4";   // bei jeder Aenderung erhoehen – iPhones laden dann automatisch neu
 
 /* ============================================================
    SPIEL 1 – MUSIK: Songs als "Interpret Titel"
@@ -73,7 +73,7 @@ const AKTIV = ["musik", "rechnen", "bilder"];
 /* Aussehen: "prinzessin" (rosa, Glitzer, Ballons) oder "stahl" (stahlblau, schlicht) */
 const THEMA = "prinzessin";
 /* Name des Geburtstagskindes fuer die Ueberschrift, z. B. "Lena" – leer lassen fuer "Zauber-Memory" */
-const KIND = "Lara";
+const KIND = "";
 
 /* Ersatzwert: wie viele Plaketten du besitzt (Obergrenze fuer die Kachel-Auswahl). */
 const PLAKETTEN = 24;
@@ -204,6 +204,31 @@ const PLAKETTEN = 24;
   .hexbtn .prog  { fill: none; stroke: var(--bronze-hi); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset .25s linear; }
   .hexbtn .icon  { fill: var(--bg); }
   .hexbtn[disabled] { opacity: .45; cursor: default; }
+  /* ---- hippe Musik-Kachel ---- */
+  .stage { position: relative; width: 260px; height: 260px; display: flex; align-items: center; justify-content: center; }
+  .disco { position: absolute; inset: 6px; border-radius: 50%; background: conic-gradient(from 0deg, #ff8fd0, #ffd36e, #8fe3ff, #c9a2ff, #a8f0c6, #ff8fd0);
+    filter: blur(26px); opacity: .35; animation: spin 9s linear infinite; transition: opacity .4s; }
+  .stage.playing .disco { opacity: .9; animation: spin 2.4s linear infinite, boom .5s ease-in-out infinite alternate; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes boom { from { scale: .92; } to { scale: 1.06; } }
+  .hexbtn .shape { transform-box: fill-box; transform-origin: center; }
+  .hexbtn.playing .shape { animation: beat .5s ease-in-out infinite alternate; }
+  @keyframes beat { from { transform: scale(1); } to { transform: scale(1.035); } }
+  .hexbtn .vinyl { transform-box: view-box; transform-origin: 120px 108px; }
+  .hexbtn.playing .vinyl { animation: spin 1.8s linear infinite; }
+  .hexbtn:not(.playing):not([disabled]) .icon { animation: breathe 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes breathe { 50% { transform: scale(1.18); } }
+  .hexbtn .icon { fill: #fff !important; filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
+  .hexbtn .eq rect { fill: #4a145f; opacity: .35; transform-box: fill-box; transform-origin: bottom; transform: scaleY(.25); }
+  .hexbtn.playing .eq rect { opacity: .9; animation-name: eqb; animation-timing-function: ease-in-out; animation-iteration-count: infinite; animation-direction: alternate; }
+  .hexbtn.playing .eq rect:nth-child(odd) { fill: #ff4fa8; } .hexbtn.playing .eq rect:nth-child(even) { fill: #7a2cc8; }
+  @keyframes eqb { from { transform: scaleY(.2); } to { transform: scaleY(1); } }
+  .hexbtn .ring { fill: none; stroke: #ffd36e; stroke-width: 3; opacity: 0; transform-box: view-box; transform-origin: 120px 120px; }
+  .hexbtn.playing .ring { animation: wave 1s ease-out infinite; } .hexbtn.playing .ring.r2 { animation-delay: .5s; }
+  @keyframes wave { from { transform: scale(1); opacity: .7; } to { transform: scale(1.4); opacity: 0; } }
+  .note { position: absolute; font-size: var(--s); color: var(--c); text-shadow: 0 0 10px var(--c); animation: noteup 2.2s ease-out forwards; pointer-events: none; }
+  @keyframes noteup { 0% { transform: translate(-50%,0) scale(.4) rotate(-10deg); opacity: 0; } 15% { opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--x)), -190px) scale(1.1) rotate(15deg); opacity: 0; } }
   .eqz { display: inline-flex; gap: 3px; height: 14px; align-items: flex-end; margin-left: 8px; vertical-align: middle; }
   .eqz i { width: 3px; background: var(--bronze-hi); animation: eq .8s infinite ease-in-out; }
   .eqz i:nth-child(2) { animation-delay: .2s } .eqz i:nth-child(3) { animation-delay: .4s }
@@ -242,6 +267,14 @@ const PLAKETTEN = 24;
   .sw input:checked + span { background: var(--bronze); }
   .sw input:checked + span::after { transform: translateX(20px); }
   .setup h3 { color: var(--bronze); font-size: 13px; letter-spacing: .15em; text-transform: uppercase; margin: 0 0 10px; }
+  .backlink { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 22px; padding: 11px 18px; border-radius: 999px;
+    background: var(--bronze); color: var(--bg); font-weight: 800; font-size: 16px; text-decoration: none; }
+  html.prinzessin .backlink { background: linear-gradient(135deg, #ff8fd0, #c77dff); color: #fff; }
+  /* Bild ohne Kachel: ganzes Bild sichtbar, abgerundet, leuchtender Rahmen */
+  .face.back .pic { max-width: 100%; max-height: 100%; width: auto; height: auto; border-radius: 22px; object-fit: contain;
+    border: 4px solid #ffd36e; box-shadow: 0 0 0 4px rgba(255,143,208,.55), 0 10px 34px rgba(255,143,208,.5); background: #fff; }
+  html:not(.prinzessin) .face.back .pic { border-color: var(--bronze-hi); box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+  .backlink.bottom { margin: 18px 0 40px; }
   .scbox { margin-bottom: 26px; }
   .scbox summary { display: flex; align-items: center; gap: 14px; padding: 12px 0; cursor: pointer; list-style: none; font-size: 16px; }
   .scbox summary::-webkit-details-marker { display: none; }
@@ -295,7 +328,7 @@ let ENABLED = [];
 function applySettings() {
   ENABLED = (Array.isArray(SETTINGS.aktiv) ? SETTINGS.aktiv : []).filter(k => GAMES[k]);
   if (!ENABLED.length) ENABLED = Object.keys(GAMES);
-  if (!ENABLED.includes(MODE)) { MODE = ENABLED[0]; save("mode", MODE); }
+  if (!ENABLED.includes(MODE)) { MODE = ENABLED[0]; save("mode", MODE); save("running", ""); }
 }
 function loadSettings() {
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 4000);
@@ -665,10 +698,7 @@ function renderPicture(entry, side) {
   const v = pictureSide(entry, side);
   if (v.song) return renderSong(v.song, SNIPPET_BILDER, "Prinzessinnen-Memory");
   const back = v.img
-    ? `<svg viewBox="0 0 280 280"><defs><clipPath id="hc"><path d="${HEXP}"/></clipPath></defs>
-         <path d="${HEXP}" fill="url(#g)"/>
-         <image href="${v.img}" x="27" y="10" width="226" height="260" preserveAspectRatio="xMidYMid slice" clip-path="url(#hc)"/>
-         <path d="${HEXP}" fill="none" stroke="#aec1d6" stroke-width="6"/></svg>`
+    ? `<img class="pic" src="${v.img}" alt="">`
     : `${HEX_PLAIN}<span class="q ${v.text.length > 7 ? "long" : ""}">${v.text}</span>`;
   app.innerHTML = `${menuLink}
     <h1>Prinzessinnen-Memory</h1>${turnLine()}
@@ -707,20 +737,48 @@ const HEX = "M120 12 L213 66 L213 174 L120 228 L27 174 L27 66 Z", PERIM = 6 * 10
 function renderSong(term, secs = SNIPPET, title = "Musik-Memory") {
   app.innerHTML = `${menuLink}
     <h1>${title}</h1>${turnLine()}
+    <div class="stage">
+    <div class="disco"></div>
     <button class="hexbtn" id="play" disabled aria-label="Abspielen">
       <svg viewBox="0 0 240 240">
+        <defs>
+          <radialGradient id="lab" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffe9a8"/><stop offset=".5" stop-color="#ff8fd0"/><stop offset="1" stop-color="#b45cf0"/></radialGradient>
+          <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+        </defs>
+        <path class="ring r1" d="${HEX}"/><path class="ring r2" d="${HEX}"/>
         <path class="track" d="${HEX}" transform="translate(120 120) scale(1.08) translate(-120 -120)"/>
         <path class="prog" id="prog" d="${HEX}" transform="translate(120 120) scale(1.08) translate(-120 -120)" stroke-dasharray="${PERIM}" stroke-dashoffset="${PERIM}"/>
         <path class="shape" d="${HEX}"/>
-        <path class="icon" id="icon" d="M100 82 L162 120 L100 158 Z"/>
+        <g class="vinyl">
+          <circle cx="120" cy="108" r="58" fill="#1a0a26"/>
+          ${[52, 46, 40, 34].map(r => `<circle cx="120" cy="108" r="${r}" fill="none" stroke="#fff" stroke-opacity=".09" stroke-width="1"/>`).join("")}
+          <path d="M120 50 A58 58 0 0 1 178 108 L120 108 Z" fill="url(#shine)"/>
+          <circle cx="120" cy="108" r="22" fill="url(#lab)"/>
+          <circle cx="132" cy="100" r="2.2" fill="#fff" opacity=".8"/>
+        </g>
+        <path class="icon" id="icon" d="M112 96 L136 108 L112 120 Z"/>
+        <g class="eq">${[...Array(8)].map((_, i) => `<rect x="${86 + i * 9}" y="176" width="6" height="26" rx="3" style="animation-delay:${(i * 0.11 % 0.5).toFixed(2)}s;animation-duration:${(0.38 + (i % 3) * 0.09).toFixed(2)}s"/>`).join("")}</g>
       </svg>
     </button>
+    </div>
     ${resultBox}<div id="status">Lade …</div>`;
   const btn = document.getElementById("play"), st = document.getElementById("status");
   const prog = document.getElementById("prog"), icon = document.getElementById("icon");
   const audio = new Audio(); audio.preload = "auto";
   let timer = null, started = 0;
-  const PLAY = "M100 82 L162 120 L100 158 Z", STOP = "M94 90 H146 V150 H94 Z";
+  const PLAY = "M112 96 L136 108 L112 120 Z", STOP = "M110 98 H130 V118 H110 Z";
+  let noteTimer = null;
+  const NOTES = ["♪", "♫", "♬", "🎵", "🎶"];
+  function floatNote() {
+    const r = btn.getBoundingClientRect(), e = document.createElement("span");
+    e.className = "note"; e.textContent = NOTES[Math.floor(Math.random() * NOTES.length)];
+    e.style.cssText = `left:${r.left + r.width * (0.15 + Math.random() * 0.7)}px;top:${r.top + r.height * 0.3}px;--x:${(Math.random() * 120 - 60).toFixed(0)}px;--c:${COLORS[Math.floor(Math.random() * COLORS.length)]};--s:${(18 + Math.random() * 16).toFixed(0)}px`;
+    addFx(e, 2300);
+  }
+  const setPlaying = on => {
+    btn.classList.toggle("playing", on); document.querySelector(".stage").classList.toggle("playing", on);
+    clearInterval(noteTimer); if (on) { floatNote(); noteTimer = setInterval(floatNote, 420); }
+  };
 
   itunes(term).then(r => { audio.src = r.previewUrl; btn.disabled = false; st.textContent = "Tipp drauf und hör zu! 🎵"; })
     .catch(e => { st.innerHTML = `<span class="bad">${e === "notfound" ? "Song nicht gefunden – Setup prüfen" : "Keine Verbindung zu Apple – Internet prüfen"}</span>`; });
@@ -728,6 +786,7 @@ function renderSong(term, secs = SNIPPET, title = "Musik-Memory") {
   function stop() {
     const wasPlaying = !audio.paused || started;
     audio.pause(); audio.currentTime = 0; clearInterval(timer); prog.style.strokeDashoffset = PERIM; icon.setAttribute("d", PLAY); st.textContent = "Nochmal hören? Tipp drauf!";
+    setPlaying(false);
     if (wasPlaying) setTimeout(reveal, 250);   // Ergebnis erst nach dem Hoeren
   }
   btn.onclick = () => {
@@ -735,7 +794,7 @@ function renderSong(term, secs = SNIPPET, title = "Musik-Memory") {
     if (!audio.paused) return stop();
     audio.currentTime = 0;
     audio.play().then(() => {
-      icon.setAttribute("d", STOP); started = Date.now();
+      icon.setAttribute("d", STOP); started = Date.now(); setPlaying(true);
       st.innerHTML = `Hör genau hin … <span class="eqz"><i></i><i></i><i></i></span>`;
       timer = setInterval(() => { const f = Math.min((Date.now() - started) / 1000 / secs, 1); prog.style.strokeDashoffset = PERIM * (1 - f); if (f >= 1) stop(); }, 200);
     }).catch(() => { st.innerHTML = `<span class="bad">Wiedergabe blockiert – nochmal tippen</span>`; });
@@ -827,6 +886,7 @@ function renderSetup() {
   app.className = "setup";
   const dupes = MODE === "rechnen" ? PAIRS.map(p => p[1].trim()).filter((r, i, a) => a.indexOf(r) !== i) : [];
   app.innerHTML = `
+    <a class="backlink" href="${location.pathname}">‹ Zurück zum Spiel</a>
     <h3>Einstellungen für alle Geräte</h3>
     <p style="margin-bottom:12px">${SETTINGS_SRC === "datei" ? "Geladen aus <code>einstellungen.json</code> – gilt auf jedem Handy."
       : SETTINGS_SRC === "fehlt" ? `<span class="bad">Die Datei <code>einstellungen.json</code> gibt es noch nicht.</span> Schalter einstellen und unten auf „Datei anlegen“ tippen.`
@@ -866,6 +926,7 @@ function renderSetup() {
     const v = Math.max(4, parseInt(e.target.value, 10) || PLAKETTEN);
     DRAFT.plaketten = v - (v % 2); renderSetup();
   };
+  app.insertAdjacentHTML("beforeend", `<a class="backlink bottom" href="${location.pathname}">‹ Zurück zum Spiel</a>`);
   wireShortcutPanel();
   const FALL = { match: sfxKaching, miss: sfxLoser, done: sfxFanfare };
   Object.keys(SOUNDS).forEach(k => {
